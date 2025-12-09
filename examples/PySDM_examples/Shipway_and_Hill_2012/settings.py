@@ -10,7 +10,7 @@ from PySDM.dynamics import condensation
 from PySDM.initialisation import spectra
 from PySDM.physics import si
 from PySDM.dynamics.collisions.collision_kernels import Geometric
-
+from PySDM.initialisation.sampling.spectral_sampling import AlphaSampling
 
 class Settings:
     def __dir__(self) -> Iterable[str]:
@@ -53,6 +53,9 @@ class Settings:
         cloud_water_radius_range=(1 * si.um, 50 * si.um),
         rain_water_radius_range=(50 * si.um, np.inf),
         ignore_moisture_profile_in_density_calc=False,
+        geomean: float = 0.04 * si.um,
+        geosig: float = 1.4,
+        alpha: float = 1.0,
     ):
         self.formulae = formulae or Formulae()
         self.n_sd_per_gridbox = n_sd_per_gridbox
@@ -80,8 +83,22 @@ class Settings:
 
         self.wet_radius_spectrum_per_mass_of_dry_air = spectra.Lognormal(
             norm_factor=particles_per_volume_STP / self.formulae.constants.rho_STP,
-            m_mode=0.08 / 2 * si.um,
-            s_geom=1.4,
+            m_mode=geomean,
+            s_geom=geosig,
+        )
+
+        default_cdf_range = (0.00001, 0.99999)
+        size_range = self.wet_radius_spectrum_per_mass_of_dry_air.percentiles(
+            default_cdf_range
+        )  # min and max range of radii to sample [m]
+        self.alpha_sampling = AlphaSampling(
+            spectrum=self.wet_radius_spectrum_per_mass_of_dry_air,
+            alpha=alpha,
+            size_range=size_range,
+            interp_points=100000,
+            dist_1_inv=lambda y, size_range: np.exp(
+                (np.log(size_range[1]) - np.log(size_range[0])) * y + np.log(size_range[0])
+            ),
         )
 
         self._th = interp1d(

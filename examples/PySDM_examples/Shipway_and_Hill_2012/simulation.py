@@ -15,7 +15,7 @@ from PySDM.dynamics import (
 )
 from PySDM.environments.kinematic_1d import Kinematic1D
 from PySDM.impl.mesh import Mesh
-from PySDM.initialisation.sampling import spatial_sampling, spectral_sampling
+from PySDM.initialisation.sampling import spatial_sampling
 
 
 class Simulation:
@@ -94,9 +94,7 @@ class Simulation:
         self.builder.add_dynamic(displacement)
         self.attributes = self.builder.particulator.environment.init_attributes(
             spatial_discretisation=spatial_sampling.Pseudorandom(),
-            spectral_discretisation=spectral_sampling.Logarithmic(
-                spectrum=settings.wet_radius_spectrum_per_mass_of_dry_air
-            ),
+            spectral_discretisation=settings.alpha_sampling,
             kappa=settings.kappa,
             collisions_only=not settings.enable_condensation,
             z_part=settings.z_part,
